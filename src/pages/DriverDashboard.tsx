@@ -10,10 +10,11 @@ import { AlertCircle } from "lucide-react";
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
-  const { startRoute, stopRoute, activeBuses } = useRealtimeBus();
+  const { startRoute, stopRoute } = useRealtimeBus();
   const [driverId, setDriverId] = useState<string | null>(null);
   const [activeRoute, setActiveRoute] = useState<string | null>(null);
   const [onlineTime, setOnlineTime] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Get driver from session or redirect to login
   useEffect(() => {
@@ -23,10 +24,25 @@ const DriverDashboard = () => {
     } else {
       setDriverId(storedDriverId);
     }
+    setIsLoading(false);
   }, [navigate]);
 
-  if (!driverId) {
-    return null; // Will redirect via useEffect
+  // Timer for online time
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (activeRoute) {
+      interval = setInterval(() => {
+        setOnlineTime((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeRoute]);
+
+  // Early returns after all hooks are declared
+  if (isLoading || !driverId) {
+    return null; // Loading or redirecting
   }
 
   const driver = drivers.find((d) => d.id === driverId);
@@ -59,16 +75,6 @@ const DriverDashboard = () => {
       </div>
     );
   }
-
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (activeRoute) {
-      interval = setInterval(() => {
-        setOnlineTime((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [activeRoute]);
 
   const handleStartRoute = () => {
     if (route && bus) {
