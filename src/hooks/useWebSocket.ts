@@ -93,14 +93,19 @@ let globalWebSocketClient: WebSocketClient | null = null;
 
 /**
  * Initialize global WebSocket client
+ * Note: Connection happens asynchronously in the background
  */
 export const initializeGlobalWebSocket = (
   url: string = getEnvConfig().websocketUrl
 ): WebSocketClient => {
   if (!globalWebSocketClient) {
     globalWebSocketClient = new WebSocketClient({ url });
+    // Connect asynchronously without blocking initialization
     globalWebSocketClient.connect().catch((error) => {
-      console.error('Failed to initialize global WebSocket:', error);
+      // Silently fail - app will use local simulation
+      if (import.meta.env.DEV) {
+        console.warn('WebSocket server unavailable, using local simulation:', error.message);
+      }
     });
   }
   return globalWebSocketClient;

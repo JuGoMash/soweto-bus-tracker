@@ -98,6 +98,7 @@ export class WebSocketClient {
   private messageQueue: WebSocketMessage[] = [];
   private clientId: string;
   private isManuallyClosed: boolean = false;
+  private resolveConnect: (() => void) | null = null;
 
   constructor(config: WebSocketConfig) {
     this.url = config.url;
@@ -114,13 +115,17 @@ export class WebSocketClient {
     return new Promise((resolve, reject) => {
       try {
         this.isManuallyClosed = false;
+        this.resolveConnect = resolve;
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
           this.reconnectAttempts = 0;
           this.notifyConnectionHandlers(true);
           this.flushMessageQueue();
-          resolve();
+          if (this.resolveConnect) {
+            this.resolveConnect();
+            this.resolveConnect = null;
+          }
         };
 
         this.ws.onmessage = (event) => {
@@ -133,14 +138,15 @@ export class WebSocketClient {
         };
 
         this.ws.onerror = (event) => {
-          const error = new Error('WebSocket error');
+          const error = new Error('WebSocket connection failed');
           this.notifyErrorHandlers(error);
-          reject(error);
+          // Error is handled by onclose, don't reject here
         };
 
         this.ws.onclose = () => {
           this.notifyConnectionHandlers(false);
-          if (!this.isManuallyClosed) {
+          if (!this.isManuallyClosed && this.reconnectAttempts < this.maxReconnectAttempts) {
+            // Attempt reconnection
             this.attemptReconnect();
           }
         };

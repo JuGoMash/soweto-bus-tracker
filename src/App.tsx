@@ -24,17 +24,31 @@ const App = () => {
     // Initialize WebSocket if enabled
     if (isWebSocketEnabled()) {
       try {
-        initializeGlobalWebSocket();
+        const wsClient = initializeGlobalWebSocket();
         enableWebSocketMode();
-        console.log("WebSocket initialized and enabled");
+
+        // Set up connection monitoring
+        const unsubscribeError = wsClient.onError((error) => {
+          if (import.meta.env.DEV) {
+            console.warn("WebSocket error:", error.message);
+          }
+        });
+
+        const unsubscribeConnection = wsClient.onConnectionChange((connected) => {
+          if (import.meta.env.DEV) {
+            console.log("WebSocket connection:", connected ? "connected" : "disconnected");
+          }
+        });
+
+        return () => {
+          unsubscribeError();
+          unsubscribeConnection();
+        };
       } catch (error) {
-        console.warn(
-          "WebSocket initialization failed, falling back to local simulation:",
-          error
-        );
+        if (import.meta.env.DEV) {
+          console.warn("WebSocket setup failed, using local simulation:", error);
+        }
       }
-    } else {
-      console.log("WebSocket disabled, using local simulation only");
     }
   }, []);
 
