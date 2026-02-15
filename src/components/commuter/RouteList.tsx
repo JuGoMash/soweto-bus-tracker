@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Search, MapPin, Clock, Bus, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, MapPin, Clock, Bus, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { routes, buses, type Route } from "@/data/mockData";
+import { routes, type Route } from "@/data/mockData";
 import { cn } from "@/lib/utils";
+import { useRealtimeBus } from "@/hooks/useRealtimeBus";
 
 interface RouteListProps {
   selectedRoute: Route | null;
@@ -12,6 +13,7 @@ interface RouteListProps {
 const RouteList = ({ selectedRoute, onSelectRoute }: RouteListProps) => {
   const [search, setSearch] = useState("");
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null);
+  const { buses } = useRealtimeBus();
 
   const filtered = routes.filter(
     (r) =>
@@ -43,7 +45,7 @@ const RouteList = ({ selectedRoute, onSelectRoute }: RouteListProps) => {
         {filtered.map((route) => {
           const activeBuses = buses.filter(
             (b) => b.routeId === route.id && b.status === "active"
-          ).length;
+          );
           const isExpanded = expandedRoute === route.id;
           const isSelected = selectedRoute?.id === route.id;
 
@@ -84,9 +86,26 @@ const RouteList = ({ selectedRoute, onSelectRoute }: RouteListProps) => {
                     </span>
                     <span className="flex items-center gap-1">
                       <Bus className="w-3 h-3" />
-                      {activeBuses} active
+                      {activeBuses.length} active
                     </span>
                   </div>
+
+                  {/* Show ETA for active buses */}
+                  {activeBuses.length > 0 && activeBuses[0].nextStop && (
+                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/30 rounded border border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Zap className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium text-green-700 dark:text-green-300">
+                            Next: {activeBuses[0].nextStop.name}
+                          </p>
+                          <p className="text-green-600 dark:text-green-400 text-xs mt-0.5">
+                            ETA: {activeBuses[0].nextStop.eta}s
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {isExpanded ? (
                   <ChevronUp className="w-4 h-4 text-muted-foreground mt-1" />

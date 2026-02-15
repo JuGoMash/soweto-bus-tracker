@@ -2,8 +2,18 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { buses as initialBuses, routes as routeData } from "@/data/mockData";
 import type { Bus } from "@/data/mockData";
 
+interface BusWithETA extends Bus {
+  nextStop?: {
+    id: string;
+    name: string;
+    eta: number; // ETA in seconds
+  };
+  currentStopIndex?: number;
+  progressToNextStop?: number; // 0 to 1
+}
+
 interface RealtimeBusState {
-  buses: Bus[];
+  buses: BusWithETA[];
   activeBuses: Set<string>;
 }
 
@@ -95,8 +105,31 @@ const simulateGPSTracking = (busId: string, routeId: string) => {
     intervalId: null,
   };
 
+  const calculateETA = (stopIndex: number, progress: number): { name: string; eta: number } | null => {
+    const stops = route.stops;
+    if (stopIndex >= stops.length - 1) {
+      return null;
+    }
+
+    const nextStop = stops[stopIndex + 1];
+    // Each segment takes ~2 seconds in simulation (20 updates * 100ms with 0.05 increment)
+    // Remaining time for current segment = (1 - progress) * 2 seconds
+    const remainingForCurrentSegment = (1 - progress) * 2;
+
+    // Time for remaining segments = (stops.length - stopIndex - 2) * 2 seconds
+    const remainingSegments = stops.length - stopIndex - 2;
+    const timeForRemainingSegments = remainingSegments * 2;
+
+    const totalETA = Math.ceil(remainingForCurrentSegment + timeForRemainingSegments);
+
+    return {
+      name: nextStop.name,
+      eta: Math.max(0, totalETA),
+    };
+  };
+
   const updatePosition = () => {
-    const bus = realtimeBusState.buses.find((b) => b.id === busId);
+    const bus = realtimeBusState.buses.find((b) => b.id === busId) as BusWithETA | undefined;
     if (!bus || !realtimeBusState.activeBuses.has(busId)) {
       if (simulation.intervalId) clearInterval(simulation.intervalId);
       gpsSimulations.delete(busId);
@@ -118,6 +151,18 @@ const simulateGPSTracking = (busId: string, routeId: string) => {
     // Simulate movement between stops (takes about 30 seconds per segment in simulation)
     simulation.progress += 0.05; // This completes a segment in ~20 updates (2 seconds)
 
+    // Calculate and store ETA
+    const etaInfo = calculateETA(simulation.stopIndex, simulation.progress);
+    if (etaInfo) {
+      bus.nextStop = {
+        id: nextStop.id,
+        name: etaInfo.name,
+        eta: etaInfo.eta,
+      };
+    }
+    bus.currentStopIndex = simulation.stopIndex;
+    bus.progressToNextStop = simulation.progress;
+
     if (simulation.progress >= 1) {
       // Move to next stop
       simulation.stopIndex++;
@@ -128,6 +173,7 @@ const simulateGPSTracking = (busId: string, routeId: string) => {
         const finalStop = stops[stops.length - 1];
         bus.lat = finalStop.lat;
         bus.lng = finalStop.lng;
+        bus.nextStop = undefined;
         stopBusRoute(busId);
         if (simulation.intervalId) clearInterval(simulation.intervalId);
         gpsSimulations.delete(busId);
@@ -168,7 +214,7 @@ const simulateGPSTracking = (busId: string, routeId: string) => {
 };
 
 export const useRealtimeBus = () => {
-  const [buses, setBuses] = useState<Bus[]>([...realtimeBusState.buses]);
+  const [buses, setBuses] = useState<BusWithETA[]>([...realtimeBusState.buses]);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {

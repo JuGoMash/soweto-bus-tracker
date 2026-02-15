@@ -98,6 +98,7 @@ const BusMap = ({ selectedRoute, onSelectRoute }: BusMapProps) => {
         .filter((b) => b.status === "active")
         .map((bus) => {
           const route = routes.find((r) => r.id === bus.routeId);
+          const busWithETA = bus as any; // BusWithETA type
           return (
             <Marker key={bus.id} position={[bus.lat, bus.lng]} icon={createBusIcon(route?.color || "#F97316")}>
               <Popup>
@@ -107,6 +108,17 @@ const BusMap = ({ selectedRoute, onSelectRoute }: BusMapProps) => {
                   {bus.registration}
                   <br />
                   <span className="text-green-600 font-semibold">● Active</span>
+                  {busWithETA.nextStop && (
+                    <>
+                      <br />
+                      <br />
+                      <strong className="text-xs">Next Stop:</strong>
+                      <br />
+                      <span className="text-xs">{busWithETA.nextStop.name}</span>
+                      <br />
+                      <span className="text-xs font-semibold text-green-600">ETA: {busWithETA.nextStop.eta}s</span>
+                    </>
+                  )}
                 </div>
               </Popup>
             </Marker>
