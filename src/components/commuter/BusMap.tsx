@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { routes, buses, type Route } from "@/data/mockData";
+import { routes, type Route } from "@/data/mockData";
+import { useRealtimeBus } from "@/hooks/useRealtimeBus";
 
 // Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -49,6 +50,7 @@ function FitBounds({ route }: { route: Route | null }) {
 }
 
 const BusMap = ({ selectedRoute, onSelectRoute }: BusMapProps) => {
+  const { buses } = useRealtimeBus();
   const displayRoutes = selectedRoute ? [selectedRoute] : routes;
   const displayBuses = selectedRoute
     ? buses.filter((b) => b.routeId === selectedRoute.id)
