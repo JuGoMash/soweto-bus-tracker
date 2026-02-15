@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Map, List, ArrowLeft, Tag } from "lucide-react";
+import { Map, List, ArrowLeft, Tag, Settings } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import BusMap from "@/components/commuter/BusMap";
 import RouteList from "@/components/commuter/RouteList";
+import CommuterFeatures from "@/components/commuter/CommuterFeatures";
 import { type Route } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ const CommuterDashboard = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<"map" | "list">("map");
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const [showFeatures, setShowFeatures] = useState(false);
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -26,6 +28,19 @@ const CommuterDashboard = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowFeatures(!showFeatures)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-body font-medium transition-colors",
+              showFeatures
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            )}
+          >
+            <Settings className="w-3 h-3" />
+            Features
+          </button>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button className="flex items-center gap-1.5 bg-accent/20 text-accent px-3 py-1.5 rounded-full text-xs font-body font-medium cursor-not-allowed opacity-70">
@@ -75,7 +90,13 @@ const CommuterDashboard = () => {
             view === "map" ? "hidden md:flex md:flex-col" : "flex flex-col w-full md:w-96"
           )}
         >
-          <RouteList selectedRoute={selectedRoute} onSelectRoute={setSelectedRoute} />
+          {showFeatures ? (
+            <div className="flex-1 overflow-y-auto p-4">
+              <CommuterFeatures selectedRoute={selectedRoute} />
+            </div>
+          ) : (
+            <RouteList selectedRoute={selectedRoute} onSelectRoute={setSelectedRoute} />
+          )}
         </div>
       </div>
 

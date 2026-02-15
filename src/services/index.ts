@@ -26,8 +26,16 @@ export type {
 } from "./routesService";
 
 export { busesService } from "./busesService";
-export type { 
-  StartRouteRequest, 
-  StopRouteRequest, 
-  BusLocationUpdate 
+export type {
+  StartRouteRequest,
+  StopRouteRequest,
+  BusLocationUpdate
 } from "./busesService";
+
+export { commuterService } from "./commuterService";
+export type {
+  FavoriteRoute,
+  ArrivalAlert,
+  TripHistory,
+  BusRating
+} from "./commuterService";

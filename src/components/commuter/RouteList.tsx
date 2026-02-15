@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Search, MapPin, Clock, Bus, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Search, MapPin, Clock, Bus, ChevronDown, ChevronUp, Zap, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { routes, type Route } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { useRealtimeBus } from "@/hooks/useRealtimeBus";
+import { useCommuterFavorites } from "@/hooks/useCommuterFavorites";
 
 interface RouteListProps {
   selectedRoute: Route | null;
@@ -14,6 +15,7 @@ const RouteList = ({ selectedRoute, onSelectRoute }: RouteListProps) => {
   const [search, setSearch] = useState("");
   const [expandedRoute, setExpandedRoute] = useState<string | null>(null);
   const { buses } = useRealtimeBus();
+  const { isFavorite, addFavorite, removeFavorite } = useCommuterFavorites();
 
   const filtered = routes.filter(
     (r) =>
@@ -51,68 +53,91 @@ const RouteList = ({ selectedRoute, onSelectRoute }: RouteListProps) => {
 
           return (
             <div key={route.id} className="border-b border-border">
-              <button
-                onClick={() => {
-                  onSelectRoute(isSelected ? null : route);
-                  toggleExpand(route.id);
-                }}
+              <div
                 className={cn(
                   "w-full p-4 text-left flex items-start gap-3 hover:bg-muted/50 transition-colors",
                   isSelected && "bg-primary/10"
                 )}
               >
-                <div
-                  className="w-3 h-3 rounded-full mt-1.5 shrink-0"
-                  style={{ backgroundColor: route.color }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-display text-sm">{route.name}</span>
-                    <span className="text-xs bg-muted px-2 py-0.5 rounded-full font-body">
-                      {route.busNumber}
-                    </span>
-                  </div>
-                  <p className="text-sm text-foreground font-medium font-body">
-                    {route.from} → {route.to}
-                  </p>
-                  <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground font-body">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {route.estimatedDuration}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {route.stops.length} stops
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Bus className="w-3 h-3" />
-                      {activeBuses.length} active
-                    </span>
-                  </div>
+                <button
+                  onClick={() => {
+                    onSelectRoute(isSelected ? null : route);
+                    toggleExpand(route.id);
+                  }}
+                  className="flex-1 flex items-start gap-3"
+                >
+                  <div
+                    className="w-3 h-3 rounded-full mt-1.5 shrink-0"
+                    style={{ backgroundColor: route.color }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-display text-sm">{route.name}</span>
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded-full font-body">
+                        {route.busNumber}
+                      </span>
+                    </div>
+                    <p className="text-sm text-foreground font-medium font-body">
+                      {route.from} → {route.to}
+                    </p>
+                    <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground font-body">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {route.estimatedDuration}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {route.stops.length} stops
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Bus className="w-3 h-3" />
+                        {activeBuses.length} active
+                      </span>
+                    </div>
 
-                  {/* Show ETA for active buses */}
-                  {activeBuses.length > 0 && activeBuses[0].nextStop && (
-                    <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/30 rounded border border-green-200 dark:border-green-800">
-                      <div className="flex items-center gap-2 text-xs">
-                        <Zap className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="font-medium text-green-700 dark:text-green-300">
-                            Next: {activeBuses[0].nextStop.name}
-                          </p>
-                          <p className="text-green-600 dark:text-green-400 text-xs mt-0.5">
-                            ETA: {activeBuses[0].nextStop.eta}s
-                          </p>
+                    {/* Show ETA for active buses */}
+                    {activeBuses.length > 0 && activeBuses[0].nextStop && (
+                      <div className="mt-2 p-2 bg-green-50 dark:bg-green-950/30 rounded border border-green-200 dark:border-green-800">
+                        <div className="flex items-center gap-2 text-xs">
+                          <Zap className="w-3 h-3 text-green-600 dark:text-green-400 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="font-medium text-green-700 dark:text-green-300">
+                              Next: {activeBuses[0].nextStop.name}
+                            </p>
+                            <p className="text-green-600 dark:text-green-400 text-xs mt-0.5">
+                              ETA: {activeBuses[0].nextStop.eta}s
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
+                  </div>
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isFavorite(route.id)) {
+                        removeFavorite(route.id);
+                      } else {
+                        addFavorite(route.id, route.name);
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-red-500 transition-colors p-1"
+                    title={isFavorite(route.id) ? "Remove from favorites" : "Add to favorites"}
+                  >
+                    <Heart
+                      className="w-4 h-4"
+                      fill={isFavorite(route.id) ? "currentColor" : "none"}
+                    />
+                  </button>
+                  {isExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-muted-foreground mt-1" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-muted-foreground mt-1" />
                   )}
                 </div>
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-muted-foreground mt-1" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-muted-foreground mt-1" />
-                )}
-              </button>
+              </div>
 
               {isExpanded && (
                 <div className="px-4 pb-4 pl-10">
