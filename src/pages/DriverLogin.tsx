@@ -2,39 +2,40 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Bus, ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
 import { drivers } from "@/data/mockData";
+import { useFormValidation } from "@/hooks/useFormValidation";
+import { schemas } from "@/lib/validation";
+import FormField from "@/components/forms/FormField";
 
 const DriverLogin = () => {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState("");
-  const [pin, setPin] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [apiError, setApiError] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  const { values, errors, touched, isSubmitting, handleChange, handleBlur, handleSubmit, getFieldError, showFieldError } = useFormValidation(
+    { phone: "", pin: "" },
+    {
+      validate: (data) => schemas.driverLogin(data),
+      onSubmit: async (data) => {
+        setApiError("");
 
-    // Simulate API call
-    setTimeout(() => {
-      // Validate credentials against drivers database
-      const driver = drivers.find((d) => d.phone === phone && d.pin === pin);
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-      if (driver) {
-        // Store driver session (in a real app, this would be in localStorage/session)
-        sessionStorage.setItem("driverId", driver.id);
-        setIsLoading(false);
-        navigate("/driver/dashboard");
-      } else {
-        setError("Invalid phone number or PIN. Please try again.");
-        setIsLoading(false);
-      }
-    }, 1000);
-  };
+        // Validate credentials against drivers database
+        const driver = drivers.find((d) => d.phone === data.phone && d.pin === data.pin);
+
+        if (driver) {
+          // Store driver session
+          sessionStorage.setItem("driverId", driver.id);
+          navigate("/driver/dashboard");
+        } else {
+          setApiError("Invalid phone number or PIN. Please try again.");
+        }
+      },
+    }
+  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-secondary px-4 relative overflow-hidden">
@@ -83,58 +84,52 @@ const DriverLogin = () => {
             <CardDescription>Enter your phone number and PIN</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {apiError && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
                 >
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
+                  <span>{apiError}</span>
                 </motion.div>
               )}
-              <div className="space-y-2">
-                <label htmlFor="phone" className="text-sm font-medium">
-                  Phone Number
-                </label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="0712345678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Format: 10 digits (e.g., 0712345678)
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="pin" className="text-sm font-medium">
-                  PIN
-                </label>
-                <Input
-                  id="pin"
-                  type="password"
-                  placeholder="••••"
-                  maxLength={4}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
-                  required
-                  disabled={isLoading}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  4-digit PIN provided by admin
-                </p>
-              </div>
+              <FormField
+                name="phone"
+                type="tel"
+                label="Phone Number"
+                placeholder="0712345678"
+                value={values.phone}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={getFieldError("phone")}
+                touched={showFieldError("phone")}
+                disabled={isSubmitting}
+                required
+                helperText="Format: 10 digits (e.g., 0712345678)"
+              />
+              <FormField
+                name="pin"
+                type="password"
+                label="PIN"
+                placeholder="••••"
+                maxLength={4}
+                value={values.pin}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={getFieldError("pin")}
+                touched={showFieldError("pin")}
+                disabled={isSubmitting}
+                required
+                helperText="4-digit PIN provided by admin"
+              />
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary/90"
-                disabled={isLoading || !phone || !pin}
+                disabled={isSubmitting}
               >
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
             </form>
 
