@@ -7,6 +7,10 @@ import Landing from "./pages/Landing";
 import CommuterDashboard from "./pages/CommuterDashboard";
 import DriverLogin from "./pages/DriverLogin";
 import DriverDashboard from "./pages/DriverDashboard";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminDrivers from "./pages/AdminDrivers";
+import AdminRoutes from "./pages/AdminRoutes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +26,10 @@ const App = () => (
           <Route path="/commuter" element={<CommuterDashboard />} />
           <Route path="/driver/login" element={<DriverLogin />} />
           <Route path="/driver/dashboard" element={<DriverDashboard />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/drivers" element={<AdminDrivers />} />
+          <Route path="/admin/routes" element={<AdminRoutes />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

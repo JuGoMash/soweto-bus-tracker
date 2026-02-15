@@ -1,12 +1,24 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Bus, UserRound } from "lucide-react";
+import { Bus, UserRound, Settings } from "lucide-react";
 
 const Landing = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-secondary px-4 relative overflow-hidden">
+      {/* Admin button - top right */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        onClick={() => navigate("/admin/login")}
+        className="absolute top-6 right-6 flex items-center gap-1.5 text-xs font-body text-muted-foreground hover:text-foreground transition-colors z-10 px-2 py-1.5 rounded-md hover:bg-muted/50"
+      >
+        <Settings className="w-4 h-4" />
+        <span>Admin</span>
+      </motion.button>
+
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 left-10 w-64 h-64 rounded-full bg-primary blur-3xl" />
