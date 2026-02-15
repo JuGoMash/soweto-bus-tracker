@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Edit2, Trash2, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, Edit2, Trash2, MapPin, ChevronDown, ChevronUp, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { routes as initialRoutes } from "@/data/mockData";
-import type { Route } from "@/data/mockData";
+import type { Route, Stop } from "@/data/mockData";
 
 const colors = ["#F97316", "#EAB308", "#1E40AF", "#DC2626", "#7C3AED", "#059669"];
 
@@ -16,6 +16,8 @@ const AdminRoutes = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedRouteStops, setExpandedRouteStops] = useState<string | null>(null);
+  const [showStopForm, setShowStopForm] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     from: "",
@@ -24,6 +26,11 @@ const AdminRoutes = () => {
     busName: "",
     estimatedDuration: "",
     color: colors[0],
+  });
+  const [stopFormData, setStopFormData] = useState({
+    name: "",
+    lat: "",
+    lng: "",
   });
 
   useEffect(() => {
@@ -109,6 +116,44 @@ const AdminRoutes = () => {
   const handleDeleteRoute = (id: string) => {
     if (confirm("Are you sure you want to delete this route?")) {
       setRoutes(routes.filter((r) => r.id !== id));
+    }
+  };
+
+  const handleAddStop = (routeId: string) => {
+    if (!stopFormData.name || !stopFormData.lat || !stopFormData.lng) {
+      alert("Please fill in all stop fields");
+      return;
+    }
+
+    setRoutes(
+      routes.map((r) => {
+        if (r.id === routeId) {
+          const newStop: Stop = {
+            id: `s${r.stops.length + 1}`,
+            name: stopFormData.name,
+            lat: parseFloat(stopFormData.lat),
+            lng: parseFloat(stopFormData.lng),
+          };
+          return { ...r, stops: [...r.stops, newStop] };
+        }
+        return r;
+      })
+    );
+
+    setShowStopForm(null);
+    setStopFormData({ name: "", lat: "", lng: "" });
+  };
+
+  const handleDeleteStop = (routeId: string, stopId: string) => {
+    if (confirm("Are you sure you want to delete this stop?")) {
+      setRoutes(
+        routes.map((r) => {
+          if (r.id === routeId) {
+            return { ...r, stops: r.stops.filter((s) => s.id !== stopId) };
+          }
+          return r;
+        })
+      );
     }
   };
 
@@ -277,12 +322,118 @@ const AdminRoutes = () => {
                     <p className="text-muted-foreground">Estimated Duration</p>
                     <p className="font-semibold">{route.estimatedDuration}</p>
                   </div>
-                  <div>
-                    <p className="text-muted-foreground">Stops</p>
-                    <p className="font-semibold">{route.stops.length} stops</p>
-                  </div>
                 </div>
-                <div className="flex gap-2 pt-4 border-t border-border">
+
+                {/* Stops Section */}
+                <div className="mb-4 border-t border-border pt-4">
+                  <button
+                    onClick={() => setExpandedRouteStops(expandedRouteStops === route.id ? null : route.id)}
+                    className="w-full flex items-center justify-between p-2 hover:bg-muted rounded-md transition-colors"
+                  >
+                    <span className="text-sm font-semibold flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {route.stops.length} Stops
+                    </span>
+                    {expandedRouteStops === route.id ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </button>
+
+                  {expandedRouteStops === route.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3 space-y-2"
+                    >
+                      {/* Existing Stops */}
+                      {route.stops.map((stop, idx) => (
+                        <div key={stop.id} className="flex items-center justify-between p-2 bg-muted rounded-md text-xs">
+                          <div className="flex-1">
+                            <p className="font-semibold">{stop.name}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {stop.lat.toFixed(4)}, {stop.lng.toFixed(4)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteStop(route.id, stop.id)}
+                            className="ml-2 text-red-600 hover:text-red-700 p-1"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+
+                      {/* Add Stop Form */}
+                      {showStopForm === route.id ? (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="space-y-2 p-3 bg-muted rounded-md border border-primary/20"
+                        >
+                          <Input
+                            placeholder="Stop name"
+                            value={stopFormData.name}
+                            onChange={(e) => setStopFormData({ ...stopFormData, name: e.target.value })}
+                            className="text-xs h-8"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              placeholder="Latitude"
+                              type="number"
+                              step="0.0001"
+                              value={stopFormData.lat}
+                              onChange={(e) => setStopFormData({ ...stopFormData, lat: e.target.value })}
+                              className="text-xs h-8"
+                            />
+                            <Input
+                              placeholder="Longitude"
+                              type="number"
+                              step="0.0001"
+                              value={stopFormData.lng}
+                              onChange={(e) => setStopFormData({ ...stopFormData, lng: e.target.value })}
+                              className="text-xs h-8"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddStop(route.id)}
+                              className="flex-1 h-7 text-xs"
+                            >
+                              Add Stop
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setShowStopForm(null);
+                                setStopFormData({ name: "", lat: "", lng: "" });
+                              }}
+                              className="flex-1 h-7 text-xs"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setShowStopForm(route.id)}
+                          className="w-full h-8 text-xs"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Add Stop
+                        </Button>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-border">
                   <Button
                     size="sm"
                     variant="outline"
