@@ -1,24 +1,38 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Bus, ArrowLeft } from "lucide-react";
+import { Bus, ArrowLeft, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState } from "react";
+import { drivers } from "@/data/mockData";
 
 const DriverLogin = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [pin, setPin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setIsLoading(true);
+
     // Simulate API call
     setTimeout(() => {
-      setIsLoading(false);
-      navigate("/driver/dashboard");
+      // Validate credentials against drivers database
+      const driver = drivers.find((d) => d.phone === phone && d.pin === pin);
+
+      if (driver) {
+        // Store driver session (in a real app, this would be in localStorage/session)
+        sessionStorage.setItem("driverId", driver.id);
+        setIsLoading(false);
+        navigate("/driver/dashboard");
+      } else {
+        setError("Invalid phone number or PIN. Please try again.");
+        setIsLoading(false);
+      }
     }, 1000);
   };
 
@@ -65,45 +79,80 @@ const DriverLogin = () => {
       >
         <Card className="bg-background/95 backdrop-blur border-primary/20">
           <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>Enter your credentials to continue</CardDescription>
+            <CardTitle>Driver Login</CardTitle>
+            <CardDescription>Enter your phone number and PIN</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"
+                >
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
               <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium">
-                  Email Address
+                <label htmlFor="phone" className="text-sm font-medium">
+                  Phone Number
                 </label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="driver@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="phone"
+                  type="tel"
+                  placeholder="0712345678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Format: 10 digits (e.g., 0712345678)
+                </p>
               </div>
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
+                <label htmlFor="pin" className="text-sm font-medium">
+                  PIN
                 </label>
                 <Input
-                  id="password"
+                  id="pin"
                   type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••"
+                  maxLength={4}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ""))}
                   required
+                  disabled={isLoading}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  4-digit PIN provided by admin
+                </p>
               </div>
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary/90"
-                disabled={isLoading}
+                disabled={isLoading || !phone || !pin}
               >
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
+
+            {/* Demo credentials hint */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700"
+            >
+              <p className="font-semibold mb-2">Demo Credentials:</p>
+              <div className="space-y-1 font-mono text-blue-600">
+                <p>Phone: 0712345678 | PIN: 1234</p>
+                <p>Phone: 0723456789 | PIN: 5678</p>
+                <p>Phone: 0734567890 | PIN: 9012</p>
+                <p>Phone: 0745678901 | PIN: 3456</p>
+              </div>
+            </motion.div>
           </CardContent>
         </Card>
       </motion.div>

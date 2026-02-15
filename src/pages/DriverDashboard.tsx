@@ -6,17 +6,59 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useState, useEffect } from "react";
 import { useRealtimeBus } from "@/hooks/useRealtimeBus";
 import { drivers, routes as routeData } from "@/data/mockData";
+import { AlertCircle } from "lucide-react";
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const { startRoute, stopRoute, activeBuses } = useRealtimeBus();
-  const [driverId] = useState("driver-1"); // In real app, this would come from auth
+  const [driverId, setDriverId] = useState<string | null>(null);
   const [activeRoute, setActiveRoute] = useState<string | null>(null);
   const [onlineTime, setOnlineTime] = useState<number>(0);
+
+  // Get driver from session or redirect to login
+  useEffect(() => {
+    const storedDriverId = sessionStorage.getItem("driverId");
+    if (!storedDriverId) {
+      navigate("/driver/login");
+    } else {
+      setDriverId(storedDriverId);
+    }
+  }, [navigate]);
+
+  if (!driverId) {
+    return null; // Will redirect via useEffect
+  }
 
   const driver = drivers.find((d) => d.id === driverId);
   const route = driver?.routeId ? routeData.find((r) => r.id === driver.routeId) : null;
   const bus = driver?.routeId ? { id: `bus-${driver.id.split("-")[1]}` } : null;
+
+  if (!driver) {
+    return (
+      <div className="min-h-screen bg-secondary flex items-center justify-center px-4">
+        <Card className="w-full max-w-md bg-background/95 border-red-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              Error
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">Driver information not found.</p>
+            <Button
+              onClick={() => {
+                sessionStorage.removeItem("driverId");
+                navigate("/driver/login");
+              }}
+              className="w-full"
+            >
+              Return to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -53,7 +95,8 @@ const DriverDashboard = () => {
     if (activeRoute) {
       handleStopRoute();
     }
-    navigate("/");
+    sessionStorage.removeItem("driverId");
+    navigate("/driver/login");
   };
 
   const driverStats = [
