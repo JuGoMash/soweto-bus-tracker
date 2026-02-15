@@ -261,13 +261,11 @@ const AdminRoutes = () => {
                   />
                   {route.name}
                 </CardTitle>
-                <CardDescription>
-                  <div className="flex items-center gap-1 mt-1">
-                    <MapPin className="w-3 h-3" />
-                    {route.from} → {route.to}
-                  </div>
-                </CardDescription>
               </CardHeader>
+              <div className="flex items-center gap-1 px-6 text-sm text-muted-foreground mb-4">
+                <MapPin className="w-3 h-3" />
+                <span>{route.from} → {route.to}</span>
+              </div>
               <CardContent>
                 <div className="space-y-3 text-sm mb-4">
                   <div>
