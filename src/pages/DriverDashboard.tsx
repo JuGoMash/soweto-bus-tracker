@@ -3,10 +3,12 @@ import { motion } from "framer-motion";
 import { Bus, LogOut, MapPin, Clock, Activity, Play, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MobileHeader } from "@/components/mobile";
 import { useState, useEffect } from "react";
 import { useRealtimeBus } from "@/hooks/useRealtimeBus";
 import { drivers, routes as routeData } from "@/data/mockData";
 import { AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
@@ -112,137 +114,150 @@ const DriverDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-secondary">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`shadow-lg transition-colors ${
-          activeRoute ? "bg-green-700 text-white" : "bg-primary text-primary-foreground"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Bus className="w-8 h-8" />
-            <div>
-              <h1 className="text-3xl font-display">Driver Dashboard</h1>
-              {activeRoute && route && (
-                <p className="text-sm opacity-90 mt-1">
-                  ● Live: {route.from} → {route.to}
-                </p>
-              )}
-            </div>
-          </div>
-          <Button
+    <div className="h-screen flex flex-col bg-secondary">
+      {/* Mobile Header */}
+      <MobileHeader
+        title={activeRoute && route ? `${route.from} → ${route.to}` : "Driver Dashboard"}
+        subtitle={activeRoute ? "● Live Tracking Active" : "Off Duty"}
+        rightActions={
+          <button
             onClick={handleLogout}
-            variant="outline"
-            className="flex items-center gap-2"
+            className="touch-target p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
-        </div>
-      </motion.div>
+            <LogOut className="w-5 h-5" />
+          </button>
+        }
+        sticky
+      />
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ staggerChildren: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
-        >
-          {driverStats.map((stat) => {
-            const Icon = stat.icon;
-            return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <Card className="bg-background/95 border-primary/20">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-secondary-foreground">
-                        {stat.label}
-                      </span>
-                      <Icon className="w-5 h-5 text-primary" />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-display text-primary">{stat.value}</p>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="w-full max-w-2xl mx-auto space-y-6">
+          {/* Status Indicator */}
+          {activeRoute && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-green-600 text-white rounded-xl p-4 shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-white rounded-full animate-pulse" />
+                <div>
+                  <p className="font-display text-sm">Route Active</p>
+                  <p className="text-xs opacity-90">
+                    Your bus location is being tracked in real-time
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <Card className="bg-background/95 border-primary/20">
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                {route ? `Route: ${route.from} → ${route.to}` : "No route assigned"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {route && (
+          {/* Stats Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ staggerChildren: 0.05 }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"
+          >
+            {driverStats.map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <motion.div
+                  key={stat.label}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  <Card className="bg-background/95 border-primary/20 h-full">
+                    <CardHeader className="pb-2 sm:pb-3">
+                      <CardTitle className="flex items-center justify-between">
+                        <span className="text-xs sm:text-sm font-medium text-secondary-foreground">
+                          {stat.label}
+                        </span>
+                        <Icon className="w-4 sm:w-5 h-4 sm:h-5 text-primary" />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xl sm:text-2xl md:text-3xl font-display text-primary line-clamp-1">
+                        {stat.value}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+
+          {/* Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="bg-background/95 border-primary/20">
+              <CardHeader>
+                <CardTitle className="text-lg sm:text-xl">Quick Actions</CardTitle>
+                <CardDescription>
+                  {route ? `${route.from} → ${route.to}` : "No route assigned"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {route && (
+                  <>
+                    {!activeRoute ? (
+                      <Button
+                        className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2 h-12 text-base"
+                        onClick={handleStartRoute}
+                      >
+                        <Play className="w-5 h-5" />
+                        Start Route
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full bg-red-600 hover:bg-red-700 flex items-center justify-center gap-2 h-12 text-base"
+                        onClick={handleStopRoute}
+                      >
+                        <Square className="w-5 h-5" />
+                        Stop Route
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button
+                  variant="outline"
+                  className="w-full h-12"
+                >
+                  View Schedule
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-12"
+                >
+                  Report Issue
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Welcome Message */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="p-4 sm:p-6 bg-primary/10 border border-primary/20 rounded-lg"
+          >
+            <p className="text-center text-secondary-foreground font-body text-sm sm:text-base">
+              {activeRoute ? (
                 <>
-                  {!activeRoute ? (
-                    <Button
-                      className="w-full bg-green-600 hover:bg-green-700 flex items-center justify-center gap-2"
-                      onClick={handleStartRoute}
-                    >
-                      <Play className="w-4 h-4" />
-                      Start Route
-                    </Button>
-                  ) : (
-                    <Button
-                      className="w-full bg-red-600 hover:bg-red-700 flex items-center justify-center gap-2"
-                      onClick={handleStopRoute}
-                    >
-                      <Square className="w-4 h-4" />
-                      Stop Route
-                    </Button>
-                  )}
+                  <strong>Route Active!</strong> Your bus location is being tracked in real-time for commuters.
+                </>
+              ) : (
+                <>
+                  Welcome, <strong>{driver?.name}</strong>! Start a route to begin tracking and show commuters your bus location.
                 </>
               )}
-              <Button variant="outline" className="w-full">
-                View Schedule
-              </Button>
-              <Button variant="outline" className="w-full">
-                Report Issue
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Welcome Message */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-12 p-6 bg-primary/10 border border-primary/20 rounded-lg"
-        >
-          <p className="text-center text-secondary-foreground font-body">
-            {activeRoute ? (
-              <>
-                <strong>Route Active!</strong> Your bus location is being tracked in real-time for commuters.
-              </>
-            ) : (
-              <>
-                Welcome, {driver?.name}! Start a route to begin tracking and show commuters your bus location in real-time.
-              </>
-            )}
-          </p>
-        </motion.div>
+            </p>
+          </motion.div>
+        </div>
       </div>
     </div>
   );

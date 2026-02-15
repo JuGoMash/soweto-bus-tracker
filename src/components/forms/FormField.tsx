@@ -29,9 +29,9 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
     const showError = touched && error;
 
     return (
-      <div className={cn("space-y-1.5", containerClassName)}>
+      <div className={cn("space-y-2", containerClassName)}>
         {label && (
-          <label className="text-sm font-medium flex items-center gap-1">
+          <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
             {label}
             {required && <span className="text-red-500">*</span>}
           </label>
@@ -40,7 +40,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
           <Input
             ref={ref}
             className={cn(
-              "transition-colors",
+              "h-12 text-base transition-colors touch-target",
               showError &&
                 "border-red-500 focus:ring-red-500 focus:border-red-500 bg-red-50/50"
             )}
@@ -102,9 +102,9 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
     const showError = touched && error;
 
     return (
-      <div className={cn("space-y-1.5", containerClassName)}>
+      <div className={cn("space-y-2", containerClassName)}>
         {label && (
-          <label className="text-sm font-medium flex items-center gap-1">
+          <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
             {label}
             {required && <span className="text-red-500">*</span>}
           </label>
@@ -113,8 +113,9 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
           <select
             ref={ref}
             className={cn(
-              "w-full px-3 py-2 border border-input rounded-md bg-background text-sm transition-colors",
+              "w-full h-12 px-3 border border-input rounded-md bg-background text-base transition-colors",
               "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",
+              "touch-target cursor-pointer",
               showError &&
                 "border-red-500 focus:ring-red-500/50 focus:border-red-500 bg-red-50/50"
             )}
@@ -177,9 +178,9 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
     const showError = touched && error;
 
     return (
-      <div className={cn("space-y-1.5", containerClassName)}>
+      <div className={cn("space-y-2", containerClassName)}>
         {label && (
-          <label className="text-sm font-medium flex items-center gap-1">
+          <label className="text-xs sm:text-sm font-medium flex items-center gap-1">
             {label}
             {required && <span className="text-red-500">*</span>}
           </label>
@@ -188,8 +189,9 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
           <textarea
             ref={ref}
             className={cn(
-              "w-full px-3 py-2 border border-input rounded-md bg-background text-sm transition-colors",
+              "w-full px-3 py-3 border border-input rounded-md bg-background text-base transition-colors resize-none",
               "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary",
+              "min-h-24 touch-target",
               showError &&
                 "border-red-500 focus:ring-red-500/50 focus:border-red-500 bg-red-50/50",
               className
