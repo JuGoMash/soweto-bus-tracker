@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { buses as initialBuses, routes as routeData } from "@/data/mockData";
 import type { Bus } from "@/data/mockData";
+import { getGlobalWebSocket } from "./useWebSocket";
+import type { BusLocationUpdate } from "@/lib/websocket";
 
 interface BusWithETA extends Bus {
   nextStop?: {
@@ -26,6 +28,17 @@ let realtimeBusState: RealtimeBusState = {
 // Listeners for bus updates
 const updateListeners = new Set<(buses: Bus[]) => void>();
 
+// Flag to control whether to use WebSocket or local simulation
+let useWebSocketMode = false;
+
+export const enableWebSocketMode = () => {
+  useWebSocketMode = true;
+};
+
+export const disableWebSocketMode = () => {
+  useWebSocketMode = false;
+};
+
 export const notifyBusUpdate = (buses: Bus[]) => {
   updateListeners.forEach((listener) => listener(buses));
 };
@@ -43,8 +56,21 @@ export const startBusRoute = (driverId: string, busId: string, routeId: string) 
     bus.status = "active";
     realtimeBusState.activeBuses.add(busId);
     notifyBusUpdate([...realtimeBusState.buses]);
-    
-    // Start simulating GPS updates
+
+    // Send WebSocket authentication if enabled
+    if (useWebSocketMode) {
+      try {
+        const wsClient = getGlobalWebSocket();
+        if (wsClient.isConnected()) {
+          wsClient.authenticateDriver(driverId, busId);
+        }
+      } catch (error) {
+        console.warn('WebSocket not available, falling back to local simulation:', error);
+        // Fall through to local simulation
+      }
+    }
+
+    // Start simulating GPS updates (fallback or concurrent with WebSocket)
     simulateGPSTracking(busId, routeId);
   }
 };
@@ -216,16 +242,57 @@ const simulateGPSTracking = (busId: string, routeId: string) => {
 export const useRealtimeBus = () => {
   const [buses, setBuses] = useState<BusWithETA[]>([...realtimeBusState.buses]);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+  const wsUnsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // Subscribe to bus updates
+    // Subscribe to local bus updates
     unsubscribeRef.current = subscribeToBusUpdates((updatedBuses) => {
       setBuses([...updatedBuses]);
     });
 
+    // Subscribe to WebSocket messages if enabled
+    if (useWebSocketMode) {
+      try {
+        const wsClient = getGlobalWebSocket();
+        wsUnsubscribeRef.current = wsClient.onMessage((message) => {
+          if (message.type === 'BUS_LOCATION_UPDATE') {
+            const locationUpdate = message as BusLocationUpdate;
+            const bus = realtimeBusState.buses.find((b) => b.id === locationUpdate.busId) as BusWithETA | undefined;
+            if (bus) {
+              bus.lat = locationUpdate.lat;
+              bus.lng = locationUpdate.lng;
+              bus.heading = locationUpdate.heading;
+              bus.currentStopIndex = locationUpdate.currentStopIndex;
+              bus.progressToNextStop = locationUpdate.progressToNextStop;
+              if (locationUpdate.nextStop) {
+                bus.nextStop = {
+                  id: locationUpdate.nextStop.id,
+                  name: locationUpdate.nextStop.name,
+                  eta: locationUpdate.nextStop.eta,
+                };
+              }
+              notifyBusUpdate([...realtimeBusState.buses]);
+            }
+          } else if (message.type === 'BUS_STATUS_CHANGE') {
+            const statusChange = message;
+            const bus = realtimeBusState.buses.find((b) => b.id === statusChange.busId);
+            if (bus) {
+              bus.status = statusChange.status;
+              notifyBusUpdate([...realtimeBusState.buses]);
+            }
+          }
+        });
+      } catch (error) {
+        console.warn('Failed to subscribe to WebSocket messages:', error);
+      }
+    }
+
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
+      }
+      if (wsUnsubscribeRef.current) {
+        wsUnsubscribeRef.current();
       }
     };
   }, []);
